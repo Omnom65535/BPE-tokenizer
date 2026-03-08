@@ -1,16 +1,17 @@
 import time
 
-tokensFileName = 'tokens2.txt'
+tokens_file_name = 'tokens_all_texts.txt'
+training_file_name = 'FormattedTexts.txt'
 startTime = time.time()
 lastTime = time.time()
 
 tokens_size = 1000000
 special_tokens = tokens_size + 5
 
-with open('Formatted.txt', 'r', encoding='ANSI') as f:
+with open(training_file_name, 'r', encoding='ANSI') as f:
     text = f.read()
 
-with open(tokensFileName, 'r', encoding='ANSI') as tokensFileRead:
+with open(tokens_file_name, 'r', encoding='ANSI') as tokensFileRead:
     tokensList = tokensFileRead.readlines()
 
 def getStats(ids):
@@ -25,7 +26,7 @@ def merge(ids, pair, idx):
     newids = []
     i = 0
     while i < len(ids):
-        if i < len(ids) -1 and ids[i] == pair[0] and ids[i+1] == pair[1]:
+        if i < len(ids) -1 and (ids[i], ids[i + 1]) == pair:
             newids.append(idx)
             i += 2
         else:
@@ -54,10 +55,7 @@ def getTokensFromFile():
         if line:
             nums = list(map(int, line.split()))
             merges[(nums[0], nums[1])] = nums[2]
-            #print(nums, nums[0], nums[1], nums[2])
-    print(f'Merges length: {len(merges)}')
-    getTime()
-    #print(merges.items())
+
     for (p0, p1), idx in merges.items():
         vocab[idx] = vocab[p0] + vocab[p1]
     vocabLen = len(vocab)
@@ -98,17 +96,13 @@ def getNewTokens(vocabSize):
             if additional_ids:
                 additional_ids = merge(additional_ids, pair, idx)
             merges[pair] = idx
-            with open(tokensFileName, 'a') as tokensFileWrite:
+            with open(tokens_file_name, 'a') as tokensFileWrite:
                 tokensFileWrite.write(' '.join(map(str, pair)) + ' ' + str(merges[pair]) + '\n')
         tokens = ids
 
     merges = {}
     mergeTokens(list(tokens), len(list(eof))-1, tokens_size + len(list(eof)) - 1, list(eof))
-    input()
     mergeTokens(list(tokens), vocabSize - 256, 0, [])
-    
-    print(f'Merges length: {len(merges)}')
-    getTime()
 
     vocab = {idx: bytes([idx]) for idx in range(256)}
     for (p0, p1), idx in merges.items():
@@ -148,14 +142,14 @@ print("length:", len(text))
 print("- - - - -")
 print("tokens length:", len(tokenizedText))
 print("compression ratio:", str(round(len(text)/len(tokenizedText),2)) + "x")
-getTime()
-print(f'First fifteen tokens: {tokenizedText[:16]}...')
-print(f'First fifteen tokens decoded: {decode(tokenizedText[:16])}...')
+print(f'First fifteen tokens: {tokenizedText[:15]}...')
+print(f'First fifteen tokens decoded: {"/".join([decode([i]) for i in tokenizedText[:15]])}...')
 print(decode([0]))
 while True:
     message = input().lower()
     tokenizedMessage = encode(message)
     print(tokenizedMessage)
-    print(*[decode([i]) for i in tokenizedMessage], sep = '/')
+    print('/'.join([decode([i]) for i in tokenizedMessage]))
     #print(decode(tokenizedMessage))
     print('- - - - -')
+
